@@ -70,17 +70,42 @@
     return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
   }
 
+  /**
+   * 民用日历校验：只认 YYYY-MM-DD，按公历“年月日”是否真实存在判断，
+   * 完全不经过 Date/时区转换——因此在 UTC、UTC+8、UTC-X 任意时区结果一致
+   * （避免“本地零点 toISOString 变成前一天”把合法日期误判为非法）。
+   */
   function isValidDate(value) {
     if (value == null || value === "") return false;
-    if (typeof value === "number") return Number.isFinite(value) && new Date(value).getTime() > 0;
+    if (typeof value === "number") return Number.isFinite(value) && value > -8.64e15 && value < 8.64e15;
+    if (value instanceof Date) return !Number.isNaN(value.getTime());
     const s = String(value).trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-    const d = new Date(s + "T00:00:00");
-    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (!m) return false;
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    if (mo < 1 || mo > 12) return false;
+    if (d < 1 || d > daysInMonth(y, mo)) return false;
+    return true;
   }
 
+  function isLeapYear(y) {
+    return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  }
+
+  function daysInMonth(y, mo) {
+    const feb = isLeapYear(y) ? 29 : 28;
+    return [31, feb, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+  }
+
+  /** 本地时区下的“今天”（YYYY-MM-DD）。扫描日/到期日均按本地日历，不做 UTC 换算。 */
   function today() {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${day}`;
   }
 
   function esc(s) {
@@ -1378,6 +1403,8 @@
     num,
     round2,
     isValidDate,
+    isLeapYear,
+    daysInMonth,
     today,
     detectCycleFrom,
     findAnyCycle,

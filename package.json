@@ -7,6 +7,19 @@
     "test": "node test/core.test.js && node test/walkthrough.js",
     "test:core": "node test/core.test.js",
     "test:ui": "node test/walkthrough.js",
+    "test:cn": "TZ=Asia/Shanghai node test/browser-e2e.js",
+    "test:utc": "TZ=UTC node test/browser-e2e.js",
+    "serve": "python3 -m http.server 8923",
     "start": "python3 -m http.server 8080"
+  },
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "playwright": "^1.49.1"
   }
 }

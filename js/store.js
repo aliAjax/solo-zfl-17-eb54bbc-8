@@ -31,12 +31,17 @@
   const LOCK_TTL_MS = 30000;
   const HEARTBEAT_MS = 10000;
 
+  // 浏览器全局对象（严格模式下必须经对象调用，否则 this=undefined 抛 Illegal invocation）
+  const g = typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : this;
+
   function memoryStorage() {
     const m = new Map();
     return {
       getItem: (k) => (m.has(k) ? m.get(k) : null),
       setItem: (k, v) => void m.set(k, String(v)),
       removeItem: (k) => void m.delete(k),
+      key: (i) => Array.from(m.keys())[i] || null,
+      get length() { return m.size; },
       _dump: () => Object.fromEntries(m)
     };
   }
@@ -70,8 +75,8 @@
       this.storage = options.storage || (typeof localStorage !== "undefined" ? localStorage : memoryStorage());
       this.now = options.now || (() => Date.now());
       this.bus = options.bus || null;
-      this._addEventListener = options.addEventListener || (typeof addEventListener === "function" ? addEventListener : null);
-      this._removeEventListener = options.removeEventListener || null;
+      this._addEventListener = options.addEventListener || (typeof g.addEventListener === "function" ? g.addEventListener.bind(g) : null);
+      this._removeEventListener = options.removeEventListener || (typeof g.removeEventListener === "function" ? g.removeEventListener.bind(g) : null);
 
       this.rev = 0;
       this.undoStack = [];
@@ -597,16 +602,15 @@
     }
     listDrafts() {
       const out = [];
-      const dump = typeof this.storage._dump === "function" ? this.storage._dump() : null;
-      if (dump) {
-        for (const [k, v] of Object.entries(dump)) {
-          if (k.startsWith(DRAFT_PREFIX)) {
-            try {
-              const p = JSON.parse(v);
-              out.push({ key: k.slice(DRAFT_PREFIX.length), at: p.at, pageId: p.pageId, draft: p.draft });
-            } catch {}
-          }
-        }
+      // 使用标准 Web Storage 枚举接口（length/key），真实 localStorage 与测试内存实现通用
+      const n = typeof this.storage.length === "number" ? this.storage.length : 0;
+      for (let i = 0; i < n; i++) {
+        const full = this.storage.key(i);
+        if (!full || !full.startsWith(DRAFT_PREFIX)) continue;
+        try {
+          const p = JSON.parse(this.storage.getItem(full));
+          out.push({ key: full.slice(DRAFT_PREFIX.length), at: p.at, pageId: p.pageId, draft: p.draft });
+        } catch {}
       }
       return out.sort((a, b) => b.at - a.at);
     }

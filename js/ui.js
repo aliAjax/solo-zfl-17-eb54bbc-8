@@ -73,14 +73,28 @@
     sel.addEventListener("change", () => {
       store.setActor(sel.value, $("#userNameInput").value.trim() || C.ROLES[sel.value].name);
       localStorage.setItem("digitdesk:role", sel.value);
-      renderAll();
+      // 延迟渲染：该 change 可能由“点击下方按钮导致控件失焦”触发，同步重建会替换正在点击的节点，
+      // 使浏览器抑制本次 click（pointerdown/up 命中却不产生 click）。角色已立即写入，处理器仍读到新角色。
+      scheduleRender();
     });
     $("#userNameInput").addEventListener("change", () => {
       const name = $("#userNameInput").value.trim() || C.ROLES[sel.value].name;
       store.setActor(sel.value, name);
       localStorage.setItem("digitdesk:user", name);
-      renderAll();
+      scheduleRender();
     });
+  }
+
+  let renderScheduled = false;
+  function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    const flush = () => {
+      renderScheduled = false;
+      renderAll();
+    };
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(flush);
+    else setTimeout(flush, 0);
   }
 
   /* ---------------- Tab 切换 ---------------- */

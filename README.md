@@ -25,6 +25,26 @@ node test/walkthrough.js    # 点击级走查：131 个断言，覆盖全部规�
 `test/dom-shim.js` 是自包含的极简 DOM（HTML 解析/选择器/事件冒泡/FormData），
 在 Node 中加载**真实的 `js/ui.js`** 驱动点击，不是把逻辑抄一遍的假测试。
 
+### 真实 Chrome 双时区验证（Asia/Shanghai 与 UTC 各 51 项）
+
+日期只按“民用年月日”判定、不经 UTC 换算，因此任意时区结果一致。已用真实 Chrome 验证：
+
+```bash
+# 先在某端口提供静态服务
+python3 -m http.server 8923
+# 分别在两个时区跑（CHROME_PATH 指向本机 Chrome/Chromium 可执行文件）
+TZ=Asia/Shanghai CHROME_PATH=/path/to/chrome node test/browser-e2e.js http://127.0.0.1:8923
+TZ=UTC            CHROME_PATH=/path/to/chrome node test/browser-e2e.js http://127.0.0.1:8923
+```
+
+覆盖：启动/八个工作台初始化、种子合同合法日期、14 例闰年/月末/非法日期、非法日期核心提交被拒（原子性）、
+合法月末日期表单保存、问题样例导入整包拒绝（六类拦截）、合法样例导入与 code 引用解析、
+正常验收→自审拦截→分级审批→财务付款、双标签页编辑锁竞争、版本回滚、刷新后数据与未提交草稿恢复。
+
+> 日期规则：`js/core.js` 的 `isValidDate` 只接受真实公历日期 `YYYY-MM-DD`
+> （`2024-02-29` 合法、`2026-02-29`/`2026-04-31`/`2026-13-40` 非法），
+> `today()` 取本地年月日；扫描日、合同起止、节点日期均按本地日历，不做 UTC 偏移。
+
 ## 功能与管控规则
 
 ### 实体
