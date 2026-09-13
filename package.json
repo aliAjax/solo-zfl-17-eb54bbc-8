@@ -1,0 +1,12 @@
+{
+  "name": "digit-acceptance-payment-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "离线数字化验收与付款台：胶片卷/扫描批次/外包商/合同/质检缺陷/付款节点管理、多级审批付款、双页并发与版本回滚",
+  "scripts": {
+    "test": "node test/core.test.js && node test/walkthrough.js",
+    "test:core": "node test/core.test.js",
+    "test:ui": "node test/walkthrough.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
